@@ -1,0 +1,165 @@
+3-Tier Application Using Docker Compose File
+Overview:
+A 3-tier architecture consists of three layers:
+
+Presentation Layer (Frontend)
+
+Application Layer (Backend)
+
+Data Layer (Database)
+
+In this example, we’ll create a simple 3-tier web application where:
+
+The Frontend is a basic web interface running a web server (e.g., Nginx).
+
+The Backend is a simple API (e.g., Node.js or Flask).
+
+The Database is a relational database (e.g., MySQL).
+
+This project demonstrates how to set up these components using Docker Compose to simplify the management of multi-container Docker applications.
+
+Step 1: Create the Project Directory
+
+mkdir 3-tier-app
+cd 3-tier-app
+Step 2: Create Docker Compose File
+Create a docker-compose.yml file in the project directory:
+
+yaml
+Copy
+version: '3'
+
+services:
+  frontend:
+    image: nginx:latest
+    container_name: frontend
+    ports:
+      - "8080:80"
+    networks:
+      - app-network
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+
+  backend:
+    image: node:latest
+    container_name: backend
+    working_dir: /usr/src/app
+    command: node server.js
+    networks:
+      - app-network
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/usr/src/app
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=mydatabase
+      - DB_USER=root
+      - DB_PASSWORD=password
+
+  db:
+    image: mysql:5.7
+    container_name: db
+    networks:
+      - app-network
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: mydatabase
+    volumes:
+      - db-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data:
+Step 3: Frontend Configuration (HTML Files)
+Create a frontend directory in the project folder and place your HTML files (for example index.html) there.
+
+The Nginx container will serve these HTML files.
+
+bash
+Copy
+mkdir frontend
+echo "<h1>Welcome to the 3-Tier Application!</h1>" > frontend/index.html
+Step 4: Backend Configuration (Node.js API)
+Create a backend directory and create a simple Node.js server (server.js) that connects to the MySQL database.
+
+bash
+Copy
+mkdir backend
+cd backend
+npm init -y
+npm install mysql express
+Create a server.js file in the backend directory with the following content:
+
+javascript
+Copy
+const express = require('express');
+const mysql = require('mysql');
+
+const app = express();
+const port = 3000;
+
+const db = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME
+});
+
+db.connect(err => {
+  if (err) {
+    console.log('Error connecting to the database: ' + err.stack);
+    return;
+  }
+  console.log('Connected to database');
+});
+
+app.get('/', (req, res) => {
+  res.send('Hello from the Backend API!');
+});
+
+app.listen(port, () => {
+  console.log(`Backend API is running on port ${port}`);
+});
+Step 5: Set Up the Database
+The docker-compose.yml file automatically pulls the MySQL image and sets the root password and database name as environment variables. 
+The backend API will connect to this database.
+
+Step 6: Run the Application Using Docker Compose
+Run the following command to start the application:
+
+bash
+Copy
+docker-compose up -d
+Check if the containers are running:
+
+bash
+Copy
+docker ps
+This will display the status of your running containers.
+
+Step 7: Access the Application
+The Frontend will be accessible by visiting http://localhost:8080.
+
+The Backend can be accessed via http://localhost:3000 (or from within the frontend if connected).
+
+The Database is running on port 3306, but it is not directly accessible from the outside unless you connect through the backend API.
+
+Step 8: Stopping the Application
+Once you're done with the project, you can stop the application by running:
+
+bash
+Copy
+docker-compose down
+This will stop and remove all the containers, networks, and volumes associated with the project.
+
+Step 9: Conclusion
+This project demonstrates how to use Docker Compose to manage a 3-tier architecture with a frontend, backend, and database.
+By defining each component as a service within the docker-compose.yml file, you can easily scale and manage each part of the application independently. 
+Docker makes it easier to set up, configure, and run multi-container applications with minimal effort.
